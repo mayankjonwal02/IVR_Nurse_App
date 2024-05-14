@@ -1,15 +1,21 @@
 package com.example.ivr_nurse_app.android
 
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
+import android.content.Context
 import android.os.Build
+import android.widget.DatePicker
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,7 +25,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +34,8 @@ import kotlinx.coroutines.launch
 import viewmodel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
 
 @SuppressLint("NewApi")
 @RequiresApi(Build.VERSION_CODES.O)
@@ -59,13 +66,17 @@ fun patientdatascreen(viewmodel: viewmodel,  myfunction: () -> Unit = {}) {
         mutableStateOf("")
     }
 
+    var duedate_1 = remember {
+        mutableStateOf("")
+    }
+
     fun senddata()
     {
-        if(eid.isNotBlank() && id.isNotBlank() && name.isNotBlank() && cno.isNotBlank() && optype.isNotBlank() && lang.isNotBlank() && duedays.isNotBlank())
+        if(eid.isNotBlank() && id.isNotBlank() && name.isNotBlank() && cno.isNotBlank() && optype.isNotBlank() && lang.isNotBlank() && duedate_1.value.isNotBlank())
         {
             CoroutineScope(Dispatchers.IO).launch{
 
-                var duedate = getdate(duedays)
+                var duedate = duedate_1.value
                 try{
                    var status =  viewmodel.send(
                         patientdata(
@@ -188,14 +199,18 @@ fun patientdatascreen(viewmodel: viewmodel,  myfunction: () -> Unit = {}) {
             )
             Spacer(modifier = Modifier.height(15.dp))
             OutlinedTextField(
-                value = duedays,
-                onValueChange = { duedays = it },
+                readOnly = true,
+                value = duedate_1.value,
+                onValueChange = { duedate_1.value = it },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = Color.Green,
                     textColor = Color.Black
                 ),keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                label = { Text(text = "Days due -> Implant Removal")},
-                placeholder = { Text(text = "Enter No. of Days")}
+                label = { Text(text = "Due Date -> Implant Removal")},
+                placeholder = { Text(text = "Enter Due Date")},
+                trailingIcon = { Icon(imageVector = Icons.Default.DateRange, contentDescription = "" , tint = Color.Green , modifier = Modifier.clickable {
+                    showDatePicker(context,duedate_1)
+                })}
             )
             Spacer(modifier = Modifier.height(20.dp))
             Button(onClick = { senddata() }, colors = ButtonDefaults.buttonColors(backgroundColor = Color.Green)) {
@@ -219,4 +234,24 @@ fun getdate(days: String):String
     var date = LocalDate.now().plusDays(days.toLong())
     var formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
     return date.format(formatter)
+}
+
+fun showDatePicker(context: Context, duedate_1: MutableState<String>)
+{
+    val mCalendar = Calendar.getInstance()
+    val mYear = mCalendar.get(Calendar.YEAR)
+    val mMonth = mCalendar.get(Calendar.MONTH)
+    val mDay = mCalendar.get(Calendar.DAY_OF_MONTH)
+    mCalendar.time = Date()
+
+    val mDatePickerDialog = DatePickerDialog(
+        context,
+        { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
+            val formattedDate = String.format("%02d-%02d-%04d", mDayOfMonth, mMonth + 1, mYear)
+            duedate_1.value = formattedDate
+        }, mYear, mMonth, mDay
+    )
+
+    mDatePickerDialog.show()
+
 }
